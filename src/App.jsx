@@ -4,7 +4,8 @@ import LoginPage from "./pages/LoginPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SignupPage from "./pages/SignupPage";
-import ProtectedRoute from './components/ProtectedRoute'; //
+import ProtectedRoute from './components/ProtectedRoute'; 
+import OAuthCallback from './pages/OAuthCallback';
 import './index.css';
 
 function App() {
@@ -16,7 +17,6 @@ function App() {
             <Route path="/" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
 
-            {/* Rutas protegidas */}
             <Route 
               path="/admin" 
               element={
@@ -32,6 +32,10 @@ function App() {
                   <StudentDashboard />
                 </ProtectedRoute>
               } 
+            />
+            <Route 
+            path="/oauth/callback" 
+            element={<OAuthCallback />} 
             />
           </Routes>
         </div>

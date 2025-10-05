@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../services/apiService';
-import { Power, Search, Eye, EyeOff } from 'lucide-react';
+import { Power, Search, Eye, EyeOff, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext'; 
+import { saveAs } from 'file-saver';
 
 const UsuariosManagement = () => {
-  // Ahora obtenemos 'isDaltonicoMode' y 'toggleDaltonicoMode' del contexto
   const { isDarkMode, isDaltonicoMode, toggleDaltonicoMode } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +44,17 @@ const UsuariosManagement = () => {
     }
   };
 
+  const handleDownloadStatement = async (usuario) => {
+    try {
+        const response = await apiService.reportes.getEstadoDeCuenta(usuario.idUsuario);
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        saveAs(blob, `EstadoDeCuenta_${usuario.carnet || usuario.idUsuario}.pdf`);
+    } catch (error) {
+        console.error("Error al descargar el estado de cuenta:", error);
+        alert(`No se pudo descargar el estado de cuenta para ${usuario.primerNombre}.`);
+    }
+  };
+
   const filteredUsuarios = usuarios.filter(usuario => {
     const fullName = `${usuario.primerNombre} ${usuario.primerApellido}`.toLowerCase();
     const carnet = usuario.carnet ? usuario.carnet.toLowerCase() : '';
@@ -52,23 +63,17 @@ const UsuariosManagement = () => {
     return fullName.includes(term) || carnet.includes(term);
   });
 
-  // Función para obtener el color del estado (Activo/Suspendido)
   const getStatusColor = (activo) => {
     if (isDaltonicoMode) {
-      // Paleta para daltónicos: azul para activo, naranja para suspendido
       return activo ? 'bg-blue-500 text-white dark:bg-blue-500' : 'bg-orange-500 text-white dark:bg-orange-500';
     }
-    // Paleta original: verde para activo, rojo para suspendido
     return activo ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200';
   };
 
-  // Función para obtener el color del rol (ADMINISTRADOR/USUARIO)
   const getRoleColor = (rol) => {
     if (isDaltonicoMode) {
-      // Paleta para daltónicos: fucsia para ADMIN, violeta para USUARIO
       return rol === 'ADMINISTRADOR' ? 'bg-fuchsia-500 text-white dark:bg-fuchsia-500' : 'bg-violet-500 text-white dark:bg-violet-500';
     }
-    // Paleta original: rojo para ADMIN, azul para USUARIO
     return rol === 'ADMINISTRADOR' ? 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200';
   };
 
@@ -82,7 +87,6 @@ const UsuariosManagement = () => {
       
       {error && <div className="mb-4 p-3 text-sm text-center text-red-700 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-200">{error}</div>}
       
-      {/* Barra de búsqueda y botón de modo daltónico */}
       <div className="mb-6 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto">
         <div className="relative w-full">
           <input
@@ -138,7 +142,7 @@ const UsuariosManagement = () => {
                     {usuario.activo ? 'Activo' : 'Suspendido'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center gap-2">
                   {usuario.rol.nombre !== 'ADMINISTRADOR' && (
                     <button
                       onClick={() => handleSuspenderUsuario(usuario.idUsuario)}
@@ -148,6 +152,13 @@ const UsuariosManagement = () => {
                       <Power className="w-5 h-5" />
                     </button>
                   )}
+                  <button
+                    onClick={() => handleDownloadStatement(usuario)}
+                    className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 p-2 rounded-md transition duration-200"
+                    aria-label={`Descargar estado de cuenta de ${usuario.primerNombre}`}
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
                 </td>
               </tr>
             ))}
