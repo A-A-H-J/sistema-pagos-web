@@ -6,31 +6,22 @@ const apiClient = axios.create({
     baseURL: API_BASE_URL
 });
 
-// --- ¡INTERCEPTOR DE AXIOS PARA ADJUNTAR EL TOKEN JWT! ---
-// Este código se ejecuta automáticamente ANTES de que cada petición sea enviada.
+// --- Interceptor de Axios para adjuntar el token JWT (sin cambios) ---
 apiClient.interceptors.request.use(
   (config) => {
-    // 1. Obtenemos el token guardado en localStorage
     const token = localStorage.getItem('authToken');
-    
-    // 2. Si el token existe, lo añadimos a la cabecera 'Authorization'
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
-    // 3. Devolvemos la configuración modificada para que la petición continúe
     return config;
   },
   (error) => {
-    // Manejamos errores en la configuración de la petición
     return Promise.reject(error);
   }
 );
 
-// Ahora, todas las funciones usan `apiClient` en lugar del `axios` global.
-// Gracias al interceptor, todas llevarán el token si existe.
 const apiService = {
-    // API de Usuarios
+    // --- API de Usuarios (con la nueva función) ---
     usuarios: {
         getAll: () => apiClient.get(`/usuarios`),
         getById: (id) => apiClient.get(`/usuarios/${id}`),
@@ -38,9 +29,46 @@ const apiService = {
         update: (id, data) => apiClient.put(`/usuarios/${id}`, data),
         suspender: (id) => apiClient.put(`/usuarios/suspender/${id}`),
         delete: (id) => apiClient.delete(`/usuarios/${id}`),
-        updateEmail: (id, newEmail) => apiClient.put(`/usuarios/${id}/email`, { newEmail })
+        updateEmail: (id, newEmail) => apiClient.put(`/usuarios/${id}/email`, { newEmail }),
+        // --- NUEVA FUNCIÓN ---
+        registrarRostro: (id, file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            return apiClient.post(`/usuarios/${id}/registrar-rostro`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+        }
     },
-    // API de Carteras
+
+    // --- API de Transacciones (con la nueva función) ---
+    transacciones: {
+        getAll: () => apiClient.get(`/transacciones`),
+        getById: (id) => apiClient.get(`/transacciones/${id}`),
+        create: (data) => apiClient.post(`/transacciones`, data),
+        update: (id, data) => apiClient.put(`/transacciones/${id}`, data),
+        delete: (id) => apiClient.delete(`/transacciones/${id}`),
+        // --- NUEVA FUNCIÓN (Asegúrate de tener este endpoint en tu backend) ---
+        getPagosPendientes: (userId) => apiClient.get(`/transacciones/pendientes/${userId}`),
+    },
+    
+    // --- API de QR (ACTUALIZADA) ---
+    qr: {
+        generateQrCode: (userId) => apiClient.get(`/qr/generate/${userId}`, {
+            responseType: 'blob'
+        }),
+        // --- FUNCIÓN ACTUALIZADA ---
+        requestPayment: (paymentData) => apiClient.post(`/qr/request-payment`, paymentData),
+        // --- NUEVA FUNCIÓN ---
+        confirmPayment: (transactionId, file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            return apiClient.post(`/qr/confirm-payment/${transactionId}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+        },
+    },
+
+    // --- OTRAS APIs (sin cambios) ---
     carteras: {
         getAll: () => apiClient.get(`/carteras`),
         getById: (id) => apiClient.get(`/carteras/${id}`),
@@ -49,52 +77,24 @@ const apiService = {
         delete: (id) => apiClient.delete(`/carteras/${id}`),
         getByUserId: (userId) => apiClient.get(`/carteras/usuario/${userId}`),
     },
-    // API de Transacciones
-    transacciones: {
-        getAll: () => apiClient.get(`/transacciones`),
-        getById: (id) => apiClient.get(`/transacciones/${id}`),
-        create: (data) => apiClient.post(`/transacciones`, data),
-        update: (id, data) => apiClient.put(`/transacciones/${id}`, data),
-        delete: (id) => apiClient.delete(`/transacciones/${id}`)
-    },
-    // API de Roles
     roles: {
         getAll: () => apiClient.get(`/roles`),
-        getById: (id) => apiClient.get(`/roles/${id}`),
-        create: (data) => apiClient.post(`/roles`, data),
-        update: (id, data) => apiClient.put(`/roles/${id}`, data),
-        delete: (id) => apiClient.delete(`/roles/${id}`)
     },
-    // API de Grados
     grados: {
         getAll: () => apiClient.get(`/grados`),
-        getById: (id) => apiClient.get(`/grados/${id}`),
-        create: (data) => apiClient.post(`/grados`, data),
-        update: (id, data) => apiClient.put(`/grados/${id}`, data),
-        delete: (id) => apiClient.delete(`/grados/${id}`)
     },
-    // API de Auth
     auth: {
         login: (credenciales) => apiClient.post(`/auth/login`, credenciales),
     },
-    // API de Dashboard
     dashboard: {
         getEstadisticasGenerales: () => apiClient.get(`/dashboard/estadisticas-generales`),
         getFlujoUltimos7Dias: () => apiClient.get(`/dashboard/flujo-ultimos-7-dias`),
         getRegistrosPorMes: () => apiClient.get(`/dashboard/registros-por-mes`),
     },
-    // API de Reportes
     reportes: {
         getEstadoDeCuenta: (usuarioId) => apiClient.get(`/reportes/estado-de-cuenta/${usuarioId}`, {
             responseType: 'blob',
         }),
-    },
-    // API de QR
-    qr: {
-        generateQrCode: (userId) => apiClient.get(`/qr/generate/${userId}`, {
-            responseType: 'blob'
-        }),
-        processPayment: (paymentData) => apiClient.post(`/qr/process-payment`, paymentData),
     },
 };
 

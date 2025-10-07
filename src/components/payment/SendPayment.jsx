@@ -40,16 +40,16 @@ const SendPayment = () => {
     };
   }, [scannerRef.current]);
 
-  const handlePayment = async (e) => {
+  const handlePaymentRequest = async (e) => {
     e.preventDefault();
     if (!monto || parseFloat(monto) <= 0) {
       setError("El monto debe ser un número positivo.");
       return;
     }
 
-    const paymentData = {
-      carnetBeneficiario: scannedCarnet,
-      idPagador: auth.userId,
+    const requestData = {
+      carnetBeneficiario: scannedCarnet, // Carnet del cliente a quien se le cobra
+      idPagador: auth.userId,           // ID del vendedor que solicita
       monto: parseFloat(monto),
       descripcion,
     };
@@ -57,22 +57,21 @@ const SendPayment = () => {
     try {
       setError(null);
       setSuccess(null);
-      const response = await apiService.qr.processPayment(paymentData);
-      setSuccess(response.data);
+      await apiService.qr.requestPayment(requestData);
+      setSuccess('Solicitud de pago enviada con éxito. El cliente debe aprobarla.');
       setMonto('');
       setDescripcion('');
-      setScannedCarnet(null); // Reset para un nuevo pago
     } catch (err) {
-      console.error("Error al procesar el pago:", err);
-      setError(err.response?.data || "Ocurrió un error al realizar el pago.");
+      console.error("Error al solicitar el pago:", err);
+      setError(err.response?.data || "Ocurrió un error al enviar la solicitud de pago.");
     }
   };
 
   if (!scannedCarnet) {
     return (
       <div className="p-8 text-center">
-        <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Escanear para Pagar</h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">Apunta la cámara al código QR del destinatario.</p>
+        <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Escanear para Solicitar Pago</h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">Apunta la cámara al código QR del cliente.</p>
         <div id="qr-reader" ref={scannerRef} className="w-full max-w-sm mx-auto"></div>
       </div>
     );
@@ -80,16 +79,16 @@ const SendPayment = () => {
 
   return (
     <div className="p-8 max-w-md mx-auto">
-      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">Realizar Pago</h3>
+      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">Solicitar Pago</h3>
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
       {success && <p className="text-green-500 text-center mb-4">{success}</p>}
       
       <div className="mb-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg text-center">
-        <p className="text-sm text-gray-600 dark:text-gray-300">Pagando a:</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300">Solicitando pago a:</p>
         <p className="font-bold text-lg text-blue-800 dark:text-blue-300">{scannedCarnet}</p>
       </div>
 
-      <form onSubmit={handlePayment} className="space-y-4">
+      <form onSubmit={handlePaymentRequest} className="space-y-4">
         <div>
           <label htmlFor="monto" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Monto ($)</label>
           <input
@@ -126,7 +125,7 @@ const SendPayment = () => {
                 type="submit"
                 className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center justify-center gap-2"
             >
-                <Send className="w-5 h-5" /> Pagar
+                <Send className="w-5 h-5" /> Solicitar Pago
             </button>
         </div>
       </form>
