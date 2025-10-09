@@ -6,7 +6,7 @@ const apiClient = axios.create({
     baseURL: API_BASE_URL
 });
 
-// --- Interceptor de Axios para adjuntar el token JWT (sin cambios) ---
+// Interceptor para adjuntar el token JWT
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
@@ -21,7 +21,6 @@ apiClient.interceptors.request.use(
 );
 
 const apiService = {
-    // --- API de Usuarios (con la nueva función) ---
     usuarios: {
         getAll: () => apiClient.get(`/usuarios`),
         getById: (id) => apiClient.get(`/usuarios/${id}`),
@@ -30,35 +29,37 @@ const apiService = {
         suspender: (id) => apiClient.put(`/usuarios/suspender/${id}`),
         delete: (id) => apiClient.delete(`/usuarios/${id}`),
         updateEmail: (id, newEmail) => apiClient.put(`/usuarios/${id}/email`, { newEmail }),
-        // --- NUEVA FUNCIÓN ---
-        registrarRostro: (id, file) => {
+        
+        /**
+         * MODIFICADO: Ahora acepta una lista de archivos y los envía bajo la clave "files".
+         */
+        registrarRostro: (id, files) => {
             const formData = new FormData();
-            formData.append('file', file);
+            // Agregamos cada archivo a la misma clave "files"
+            files.forEach(file => {
+                formData.append('files', file);
+            });
+            
             return apiClient.post(`/usuarios/${id}/registrar-rostro`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
         }
     },
 
-    // --- API de Transacciones (con la nueva función) ---
     transacciones: {
         getAll: () => apiClient.get(`/transacciones`),
         getById: (id) => apiClient.get(`/transacciones/${id}`),
         create: (data) => apiClient.post(`/transacciones`, data),
         update: (id, data) => apiClient.put(`/transacciones/${id}`, data),
         delete: (id) => apiClient.delete(`/transacciones/${id}`),
-        // --- NUEVA FUNCIÓN (Asegúrate de tener este endpoint en tu backend) ---
         getPagosPendientes: (userId) => apiClient.get(`/transacciones/pendientes/${userId}`),
     },
     
-    // --- API de QR (ACTUALIZADA) ---
     qr: {
         generateQrCode: (userId) => apiClient.get(`/qr/generate/${userId}`, {
             responseType: 'blob'
         }),
-        // --- FUNCIÓN ACTUALIZADA ---
         requestPayment: (paymentData) => apiClient.post(`/qr/request-payment`, paymentData),
-        // --- NUEVA FUNCIÓN ---
         confirmPayment: (transactionId, file) => {
             const formData = new FormData();
             formData.append('file', file);
@@ -68,7 +69,6 @@ const apiService = {
         },
     },
 
-    // --- OTRAS APIs (sin cambios) ---
     carteras: {
         getAll: () => apiClient.get(`/carteras`),
         getById: (id) => apiClient.get(`/carteras/${id}`),
